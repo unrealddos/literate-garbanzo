@@ -1,10 +1,13 @@
 import asyncio
+import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 
-TELEGRAM_BOT_TOKEN = '8293236114:AAGU-QIX1JIRDv-Dz92FhVx_tDsAJxdvaFo'
+# ===== CONFIGURATION =====
+TELEGRAM_BOT_TOKEN = '8702848711:AAEbzV3LZ9ejJdeZujkRlyAFqMmx6QttneA'
 ADMIN_USER_ID = 7252677891
 USERS_FILE = 'users.txt'
+# =========================
 
 # Dictionary to keep track of user attack status
 user_attack_status = {}
@@ -73,7 +76,6 @@ async def run_attack(chat_id, ip, port, duration, context, user_id):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
 
     finally:
-        # Mark the user's attack as completed
         user_attack_status[user_id] = False
         await context.bot.send_message(chat_id=chat_id, text="*✅ Attack Completed! ✅*\n*Thank you for using our UnRealHax service!*", parse_mode='Markdown')
 
@@ -86,7 +88,6 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need to be approved to use this bot.*", parse_mode='Markdown')
         return
 
-    # Check if the user already has an ongoing attack
     if user_attack_status.get(user_id, False):
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ You already have an attack in progress. Please wait for it to finish.*", parse_mode='Markdown')
         return
@@ -103,13 +104,21 @@ async def attack(update: Update, context: CallbackContext):
         f"*🔥 Enjoy And Fuck Whole Lobby  💥*"
     ), parse_mode='Markdown')
 
-    # Mark this user as having an ongoing attack
     user_attack_status[user_id] = True
-
     asyncio.create_task(run_attack(chat_id, ip, port, duration, context, user_id))
 
 def main():
+    # FIX: Clear webhook before polling to avoid Conflict error
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    
+    # Yeh line Conflict error fix karegi
+    async def clear_webhook():
+        await application.bot.delete_webhook()
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(clear_webhook())
+    
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("manage", manage))
     application.add_handler(CommandHandler("attack", attack))
